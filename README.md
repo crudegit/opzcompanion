@@ -1,6 +1,6 @@
 # Ozcy, the OP-Z Companion
 
-This repo contains development and source files for Ozzy, an unofficial OP-Z extension module.
+This repo contains development and source files for Ozcy, an unofficial OP-Z extension module.
 
 Ozcy's goal is to 
 
