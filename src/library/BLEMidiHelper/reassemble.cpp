@@ -3,12 +3,13 @@
 
 #define printf(x,y) "";
 
-uint16_t head = 0;
-uint16_t tail = 0;
+BMH_ BLEMidiHelper;
 
-midi_callback process_midi(uint16_t o, uint16_t l);
+uint8_t BMH_::gwc(uint16_t o, uint16_t l){
+	return rbuffer[(o+l)%BLEMIDI_RBUFF_SIZE];
+}
 
-uint8_t process_blemidi(char *msg, int len){
+uint8_t BMH_::process_blemidi(const uint8_t *msg, int len){
     uint16_t last_tail = tail;
     if( ((last_tail+BLEMIDI_RBUFF_SIZE-1-head) % BLEMIDI_RBUFF_SIZE) < len){
         return 0;
@@ -34,7 +35,7 @@ uint8_t process_blemidi(char *msg, int len){
 }
 
 
-uint8_t process_next_message(midi_callback cb){
+uint8_t BMH_::process_next_message(midi_callback cb){
     if(tail == head){
         return 0;
     }
