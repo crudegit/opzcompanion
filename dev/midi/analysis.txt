@@ -8,7 +8,7 @@ message types:
   0x03: Track select and octave shifts
   0x04: Ping/Keepalive?
   0x05  Playback offset info
-  0x06: Key presses
+  0x06: Key presses / shift status
   0x07: Playback data
   0x08: Error in request
   0x09: Response settings (see 0x0b)
@@ -44,7 +44,12 @@ screen  F000207601 06 01401F3F00F7
                           x
 shift   F000207601 06 01403F1F00 F7
         F000207601 06 00001F1F00 F7
-                        
+
+        F000207601 06 00001F1F00 F7 
+        F000207601 06 00401F1F00 F7
+        F000207601 06 01001F1F00 F7
+        F000207601 06 01401F1F00 F7
+
                             x
 stop    F000207601 06 01401F5F00 F7
         F000207601 06 01401F1F00 F7

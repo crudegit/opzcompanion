@@ -105,6 +105,7 @@ def _main():
         , 'clock': False
         , 'fwd': False
         , 'sendinfo': True
+        , 'cc': True
         , 'dump': True
         , 'debug': False
         , 'lbr': 128
@@ -272,7 +273,7 @@ def _main():
     
     def sendinfomessage():
         while True:
-            if parms['sendinfo']:
+            if parms['cc'] and parms['sendinfo']:
                 send_msg('opzout', sexm('00 20 76 01' + ' 00 ' + parms['zinfo']))
             time.sleep(parms['idel'])
     
@@ -287,12 +288,13 @@ def _main():
         def do_connect(self, arg):
             print("forwarding started")
             mb('opzin').callback = gen_incb('opzin')
-            send_msg('opzout', mm('f0 7e7f0601 f7'))
-            time.sleep(.1)
-            send_msg('opzout', mm('f000207601 00 '+parms['zinfo']+' f7'))
-            time.sleep(.1)
-            send_msg('opzout', mm('f000207601 0b 0009 000000000000 0000 f7'))
-            time.sleep(.1   )
+            if parms['cc']:
+                send_msg('opzout', mm('f0 7e7f0601 f7'))
+                time.sleep(.1)
+                send_msg('opzout', mm('f000207601 00 '+parms['zinfo']+' f7'))
+                time.sleep(.1)
+                send_msg('opzout', mm('f000207601 0b 0009 000000000000 0000 f7'))
+                time.sleep(.1   )
             bgt.start()
         def do_sexm(self, arg):
             m = sexm(arg)
