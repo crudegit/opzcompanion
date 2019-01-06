@@ -1,5 +1,5 @@
-#ifndef __reassemble_h__
-#define __reassemble_h__
+#ifndef __BLEMidiHelper_h__
+#define __BLEMidiHelper_h__
 
 #include <stdint.h>
 
@@ -23,4 +23,4 @@ class BMH_ {
 
 extern BMH_ BLEMidiHelper;
 
-#endif // __reassemble_h__
+#endif // __BLEMidiHelper_h__
