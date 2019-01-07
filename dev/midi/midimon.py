@@ -251,7 +251,7 @@ def _main():
                     ob = lhm[o:o+2]
                     if ob == nb:
                         s = s + colored.yellow(nb)
-                    elif ob == '':
+                    elif ob == '' or ob == 'F7':
                         s = s + colored.colorama.Back.YELLOW + colored.red(nb) + colored.colorama.Back.RESET
                     else:
                         try:
@@ -408,15 +408,62 @@ def _main():
             return True
         def do_p(self, arg):
             pp.pprint(parms)
+        def complete_toggle(self, text, line, begidx, endidx):
+            v = []
+            for x in parms.keys():
+                if type(parms[x]) == bool:
+                    if text != '':
+                        if not x.lower().startswith(text.lower()):
+                            continue
+                    v.append(x)
+            if len(v) == 1:
+                v[0] = v[0] + ' '
+            return v
         def do_toggle(self, arg):
             parms[arg.lower()] = (not parms[arg.lower()])
             update_config_file()
             self.do_p('')
+        def do_togglem(self, arg):
+            x = parms['noshow'].upper().split(' ')
+            y = arg.upper().split(' ')
+            for z in y:
+                if z == '':
+                    continue
+                if z in x:
+                    x.remove(z)
+                else:
+                    x.append(z)
+            
+            parms['noshow'] = ' '.join(x)
+            update_config_file()
+            self.do_p('')
+        def complete_set(self, text, line, begidx, endidx):
+            v = []
+            for x in parms.keys():
+                if type(parms[x]) == str:
+                    if text != '':
+                        if not x.lower().startswith(text.lower()):
+                            continue
+                    v.append(x)
+            if len(v) == 1:
+                v[0] = v[0] + ' '
+            return v
         def do_set(self, arg):
             x = arg.split(' ', 1)
             parms[x[0].lower()] = x[1]
             update_config_file()
             self.do_p('')
+        def complete_seti(self, text, line, begidx, endidx):
+            v = []
+            for x in parms.keys():
+                if type(parms[x]) == int:
+                    if text != '':
+                        if not x.lower().startswith(text.lower()):
+                            continue
+                    v.append(x)
+            if len(v) == 1:
+                v[0] = v[0] + ' '
+            return v
         def do_seti(self, arg):
             x = arg.split(' ', 1)
             parms[x[0].lower()] = int(x[1])
@@ -436,6 +483,16 @@ def _main():
             return False
         def do_h2a(self, arg):
             pp.pprint(binascii.a2b_hex(arg).decode('latin1'))
+        def complete_c(self, text, line, begidx, endidx):
+            v = []
+            for x in last_msg.keys():
+                if text != '':
+                    if not x.lower().startswith(text.lower()):
+                        continue
+                v.append(x)
+            if len(v) == 1:
+                v[0] = v[0] + ' '
+            return v
         def do_c(self, arg):
             s = ''
             if not (arg is None) and len(arg.strip()) > 0:
@@ -479,6 +536,60 @@ def _main():
                     puts(colored.yellow(repr(e)))
                     puts(colored.yellow(traceback.format_exc()))
             return False
+            
+        def complete_read(self, text, line, begidx, endidx):
+            import os
+            p = line.split(' ',1)
+            try:
+                print((text, line, p, begidx, endidx))
+                otext = text
+                text = p[1]
+                
+                x = path.split(text)
+                dn = x[0]
+                fn = x[1]
+                
+                if dn == '':
+                    dn = './'
+                    
+                v = []
+                if path.exists(dn) and path.isdir(dn):
+                    print((dn, fn))
+                    if fn != '' and path.exists(text) and path.isdir(text):
+                        v.append(text+'/')
+                    else:
+                        for aname in os.listdir(dn):
+                            if fn == '' or aname.lower().startswith(fn.lower()):
+                                #print(aname)
+                                v.append(aname)
+                        
+                        if len(v) == 1:
+                            if path.isdir(path.join(dn, v[0])):
+                                v[0] = v[0]+'/'
+                            else:
+                                v[0] = v[0]+' '
+                
+                return v
+                
+            except Exception as e:
+                print(e)
+                return []
+            
+        def do_read(self, arg):
+            with open(arg, 'r') as mf:
+                pline = ''
+                for line in mf:
+                    line = line.strip()
+                    if line == '' or line.startswith('#'):
+                        continue
+                    
+                    if line.startswith('<') or line.startswith('>'):
+                        line = [z for z in filter(lambda x: x != '', [y.strip() for y in line.split(' ')])]
+                        
+                        line = line[4]
+                        
+                    puts_message('X', 'internal', mm(line))
+            
         def do_default(self, arg):
             puts(colored.magenta("Unknown command %s\n" % (arg,)))
     

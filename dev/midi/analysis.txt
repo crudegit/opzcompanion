@@ -16,7 +16,7 @@ message types:
   0x0b: Request settings
   0x0c: Project-info?
     => contains no info on: sequencer notes, patches, sequence length, mute settings, midi
-    
+    => contains: metronome + volume encoders
   0x0e: Encoder/patch data
   0x0f: Request midi config
   0x10: Midi parameters
