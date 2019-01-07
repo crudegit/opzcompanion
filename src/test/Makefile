@@ -1,23 +1,39 @@
 
+STDARGS:=-Wall -D DOPRINTF
+#STDARGS:=-Wall
+STDINCS:=-I../library/BLEMidiHelper/src/ -I../library/OPZSysExUtil/src/
+CFLAGS:=$(STDARGS) $(STDINCS)
+XLIBS:=util conamidi
+CC:=g++
+
+
 all: reassemble opzsxt
 
-util.o: util.c
-	g++ -c -Wall -o util.o util.c
+build/%.o: %.c
+	$(CC) -c $(STDARGS) $(STDINCS) -o $@ $<
 
-reassemble: reassemble.cpp BLEMidiHelper.o util.o
-	g++ -Wall -I../library/BLEMidiHelper/src/ -o reassemble reassemble.cpp BLEMidiHelper.o util.o
+build:
+	mkdir build
+	touch build
 
-BLEMidiHelper.o: ../library/BLEMidiHelper/src/BLEMidiHelper.cpp ../library/BLEMidiHelper/src/BLEMidiHelper.h
-	g++ -c -Wall -I../library/BLEMidiHelper/src/ -o BLEMidiHelper.o ../library/BLEMidiHelper/src/BLEMidiHelper.cpp 
+build/xlib.a: build/util.o build/conamidi.o
+	ar rcs build/xlib.a $^
 
-opzsxt: opzsxt.cpp BLEMidiHelper.o OPZSX.o util.o
-	g++ -Wall -I../library/OPZSysExUtil/src/ -I../library/BLEMidiHelper/src/ -o opzsxt opzsxt.cpp OPZSX.o BLEMidiHelper.o util.o
+reassemble: reassemble.cpp build/BLEMidiHelper.o build/xlib.a
+	$(CC) $(CFLAGS) -o reassemble reassemble.cpp build/BLEMidiHelper.o build/xlib.a
 
-OPZSX.o: ../library/OPZSysExUtil/src/OPZSX.cpp ../library/OPZSysExUtil/src/OPZSX.h
-	g++ -c -Wall -I../library/OPZSysExUtil/src/ -o OPZSX.o ../library/OPZSysExUtil/src/OPZSX.cpp
+build/BLEMidiHelper.o: ../library/BLEMidiHelper/src/BLEMidiHelper.cpp ../library/BLEMidiHelper/src/BLEMidiHelper.h
+	$(CC) $(CFLAGS) -c -o build/BLEMidiHelper.o ../library/BLEMidiHelper/src/BLEMidiHelper.cpp 
+
+opzsxt: opzsxt.cpp build/BLEMidiHelper.o build/OPZSX.o build/xlib.a
+	$(CC) $(CFLAGS) -o opzsxt opzsxt.cpp build/OPZSX.o build/BLEMidiHelper.o build/xlib.a
+
+build/OPZSX.o: ../library/OPZSysExUtil/src/OPZSX.cpp ../library/OPZSysExUtil/src/OPZSX.h
+	$(CC) $(CFLAGS) -c -o build/OPZSX.o ../library/OPZSysExUtil/src/OPZSX.cpp
 
 clean:
-	rm -f reassemble opzsxt *.so *.o
+	rm -f reassemble opzsxt *.so *.o *.a
+	rm -f build/*
 
 .PHONY: clean all
 
