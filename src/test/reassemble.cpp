@@ -1,8 +1,12 @@
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE
+#endif // _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <reassemble.h>
+
+#define BLEMIDI_RBUFF_SIZE 256
+#include <BLEMidiHelper.h>
 
 void process_line(char *line, size_t len);
 
@@ -61,28 +65,24 @@ void process_line(char *line, size_t len){
         i++;
     }
     printf("\n");
-    process_blemidi(linebuff, o);
+    BLEMidiHelper.process_blemidi(linebuff, o);
 
-    while(process_next_message(&process_midi)){
+    while(BLEMidiHelper.process_next_message(&process_midi)){
     }
 }
 
-//uint8_t gwc(uint16_t o, uint16_t l){
-//    return rbuffer[(o+l)%BLEMIDI_RBUFF_SIZE];
-//}
-
 void process_midi(uint16_t o, uint16_t l){
-    printf("MIDI: l=%i %02hhx", l, gwc(o,0));
+    printf("MIDI: l=%i %02hhx", l, BLEMidiHelper.gwc(o,0));
     for(uint16_t i=1;i<l;i++){
-        printf("%02hhx", gwc(o,i));
+        printf("%02hhx", BLEMidiHelper.gwc(o,i));
     }
     printf("\n");
-    switch(gwc(o,0) & 0xf0){
+    switch(BLEMidiHelper.gwc(o,0) & 0xf0){
         case 0x80:{
-            printf("note off %02hhx", gwc(o,1));
+            printf("note off %02hhx", BLEMidiHelper.gwc(o,1));
         }break;
         case 0x90:{
-            printf("note on %02hhx", gwc(o,1));
+            printf("note on %02hhx", BLEMidiHelper.gwc(o,1));
         }break;
         default:{
         }break;

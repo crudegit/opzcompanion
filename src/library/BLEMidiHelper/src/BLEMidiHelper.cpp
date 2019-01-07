@@ -1,12 +1,25 @@
 #include "BLEMidiHelper.h"
 #include <stdint.h>
+#include <string.h>
 
 #define printf(x,y) "";
 
 BMH_ BLEMidiHelper;
 
 uint8_t BMH_::gwc(uint16_t o, uint16_t l){
-	return rbuffer[(o+l)%BLEMIDI_RBUFF_SIZE];
+    return rbuffer[(o+l)%BLEMIDI_RBUFF_SIZE];
+}
+
+uint8_t BMH_::copy_to_buffer(uint16_t offset, uint16_t len, uint8_t * buffer){
+    if(offset + len >= BLEMIDI_RBUFF_SIZE){
+        uint16_t rlen = BLEMIDI_RBUFF_SIZE - offset;
+        memcpy(buffer, &(rbuffer[offset]), sizeof(uint8_t)*rlen);
+        memcpy(&(buffer[rlen]), rbuffer, sizeof(uint8_t)*(len-rlen));
+    }
+    else {
+        memcpy(buffer, &(rbuffer[offset]), sizeof(uint8_t)*len);
+    }
+    return len;
 }
 
 uint8_t BMH_::process_blemidi(const uint8_t *msg, int len){
@@ -46,7 +59,7 @@ uint8_t BMH_::process_next_message(midi_callback cb){
     uint16_t cnt = 0;
 
     if(!is_sysex){
-        if(fb == 0xf7){
+        if(fb == 0xf7 | fb == 0xfc | fb == 0xf8){
             mmlen = 1;
         }
         else {
@@ -58,7 +71,7 @@ uint8_t BMH_::process_next_message(midi_callback cb){
         cnt++;
         if(is_sysex){
             if(cnt > 1 && rbuffer[i] & 0x80){
-                cb(tail, cnt);
+                cb(tail, cnt-1);
                 tail = i;
                 return 1;
             }
