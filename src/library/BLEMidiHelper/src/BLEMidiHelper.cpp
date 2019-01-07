@@ -2,8 +2,6 @@
 #include <stdint.h>
 #include <string.h>
 
-#define printf(x,y) ;
-
 BMH_ BLEMidiHelper;
 
 uint8_t BMH_::gwc(uint16_t o, uint16_t l){

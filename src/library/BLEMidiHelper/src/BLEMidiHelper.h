@@ -1,6 +1,17 @@
 #ifndef __BLEMidiHelper_h__
 #define __BLEMidiHelper_h__
 
+
+
+#ifndef DOPRINTF
+#ifndef printf
+#define printf(...) ;
+#endif
+#else
+#include <stdio.h>
+#endif
+
+
 #include <stdint.h>
 
 #ifndef BLEMIDI_RBUFF_SIZE
