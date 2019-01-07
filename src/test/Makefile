@@ -3,9 +3,7 @@ STDARGS:=-Wall -D DOPRINTF
 #STDARGS:=-Wall
 STDINCS:=-I../library/BLEMidiHelper/src/ -I../library/OPZSysExUtil/src/
 CFLAGS:=$(STDARGS) $(STDINCS)
-XLIBS:=util conamidi
 CC:=g++
-
 
 all: reassemble opzsxt
 
