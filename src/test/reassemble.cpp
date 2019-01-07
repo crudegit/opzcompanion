@@ -11,6 +11,7 @@
 #include "util.h"
 
 void process_line(uint8_t *line, size_t len);
+void process_midi(uint16_t o, uint16_t l);
 
 int main(int argc, char **argv){
     
@@ -28,8 +29,6 @@ int main(int argc, char **argv){
 
     exit(1);
 }
-
-void process_midi(uint16_t o, uint16_t l);
 
 void process_line(uint8_t *line, size_t len){
     BLEMidiHelper.process_blemidi(line, len);

@@ -9,6 +9,13 @@
 
 void parse_line(char *line, size_t len, line_processor lp);
 
+void process_blemidi_line(uint8_t *line, size_t len, midi_callback mcb){
+    BLEMidiHelper.process_blemidi(line, len);
+
+    while(BLEMidiHelper.process_next_message(mcb)){
+    }
+}
+
 void read_file_by_line(const char *fname, line_processor lp){
     FILE *f;
     
@@ -30,7 +37,7 @@ void read_file_by_line(FILE *f, line_processor lp){
     ssize_t read;
     
     while((read = getline(&line, &len, f)) != -1){
-        //printf("Read (%i): %s", len, line);
+        printf("Read (%li): %s", len, line);
         printf("-------------------------------------------------------------\n");
         parse_line(line, len, lp);
     }
@@ -61,10 +68,10 @@ void parse_line(char *line, size_t len, line_processor lp){
         rb[0] = line[i];
         rb[1] = line[i+1];
         linebuff[o++] = (uint8_t)(strtol(rb, NULL, 16) & 0xff);
-        //printf("rb: %s => %02hhx\n", rb, linebuff[o-1]);
-        //printf("%02hhx", linebuff[o-1]);
+        printf("rb: %s => %02hhx\n", rb, linebuff[o-1]);
+        printf("%02hhx", linebuff[o-1]);
         i++;
     }
-    //printf("\n");
+    printf("\n");
     lp(linebuff, o);
 }
