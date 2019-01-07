@@ -8,68 +8,31 @@
 #define BLEMIDI_RBUFF_SIZE 32
 #include <BLEMidiHelper.h>
 
-void process_line(char *line, size_t len);
+#include "util.h"
+
+void process_line(uint8_t *line, size_t len);
 
 int main(int argc, char **argv){
-    FILE *f;
-    char *line = NULL;
-    size_t len = 0;
-    ssize_t read;
-
+    
+    printf("Midi message buffer size is %li\n", sizeof(BMH_::rbuffer));
+    
     if(argc < 2){
         printf("Reading from stdin\n");
-        f = stdin;
+        read_file_by_line(stdin, &process_line);
     }
     else {
         printf("Opening %s\n", argv[1]);
-        f = fopen(argv[1], "r");
-    }
-
-    printf("Midi message buffer size is %li\n", sizeof(BMH_::rbuffer));
-
-    if(f == NULL){
-        exit(EXIT_FAILURE);
-    }
-    
-    while((read = getline(&line, &len, f)) != -1){
-        //printf("Read (%i): %s", len, line);
-        printf("-------------------------------------------------------------\n");
-        process_line(line, len);
-    }
-
-    fclose(f);
-
-    if(line){
-        free(line);
+        read_file_by_line(argv[1], &process_line);
+        
     }
 
     exit(1);
 }
 
-uint8_t linebuff[1024];
-
 void process_midi(uint16_t o, uint16_t l);
 
-void process_line(char *line, size_t len){
-    int o = 0;
-    char rb[] = {'0','0',0};
-    if(line[0] == '#'){
-        return;
-    }
-
-    for(size_t i=0;i<len;i++){
-        if(line[i] == '\n'){
-            break;
-        }
-        rb[0] = line[i];
-        rb[1] = line[i+1];
-        linebuff[o++] = (uint8_t)(strtol(rb, NULL, 16) & 0xff);
-        //printf("rb: %s => %02hhx\n", rb, linebuff[o-1]);
-        printf("%02hhx", linebuff[o-1]);
-        i++;
-    }
-    printf("\n");
-    BLEMidiHelper.process_blemidi(linebuff, o);
+void process_line(uint8_t *line, size_t len){
+    BLEMidiHelper.process_blemidi(line, len);
 
     while(BLEMidiHelper.process_next_message(&process_midi)){
     }
