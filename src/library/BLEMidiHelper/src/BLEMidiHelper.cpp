@@ -2,7 +2,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#define printf(x,y) "";
+#define printf(x,y) ;
 
 BMH_ BLEMidiHelper;
 
@@ -59,7 +59,7 @@ uint8_t BMH_::process_next_message(midi_callback cb){
     uint16_t cnt = 0;
 
     if(!is_sysex){
-        if(fb == 0xf7 | fb == 0xfc | fb == 0xf8){
+        if((fb == 0xf7) | (fb == 0xfc) | (fb == 0xf8)){
             mmlen = 1;
         }
         else {

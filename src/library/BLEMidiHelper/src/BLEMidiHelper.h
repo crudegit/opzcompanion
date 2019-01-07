@@ -7,7 +7,6 @@
 #define BLEMIDI_RBUFF_SIZE 4096
 #endif // BLEMIDI_RBUFF_SIZE
 
-
 typedef void (*midi_callback)(uint16_t offset, uint16_t length);
 
 class BMH_ {

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 
-#define BLEMIDI_RBUFF_SIZE 256
+#define BLEMIDI_RBUFF_SIZE 32
 #include <BLEMidiHelper.h>
 
 void process_line(char *line, size_t len);
@@ -24,12 +24,16 @@ int main(int argc, char **argv){
         printf("Opening %s\n", argv[1]);
         f = fopen(argv[1], "r");
     }
+
+    printf("Midi message buffer size is %li\n", sizeof(BMH_::rbuffer));
+
     if(f == NULL){
         exit(EXIT_FAILURE);
     }
     
     while((read = getline(&line, &len, f)) != -1){
         //printf("Read (%i): %s", len, line);
+        printf("-------------------------------------------------------------\n");
         process_line(line, len);
     }
 
@@ -53,7 +57,7 @@ void process_line(char *line, size_t len){
         return;
     }
 
-    for(int i=0;i<len;i++){
+    for(size_t i=0;i<len;i++){
         if(line[i] == '\n'){
             break;
         }
@@ -73,8 +77,13 @@ void process_line(char *line, size_t len){
 
 void process_midi(uint16_t o, uint16_t l){
     printf("MIDI: l=%i %02hhx", l, BLEMidiHelper.gwc(o,0));
+
+    uint8_t lbuff[1024];
+
+    BLEMidiHelper.copy_to_buffer(o, l, lbuff);
+
     for(uint16_t i=1;i<l;i++){
-        printf("%02hhx", BLEMidiHelper.gwc(o,i));
+        printf(" %02hhx/%02hhx", BLEMidiHelper.gwc(o,i), lbuff[i]);
     }
     printf("\n");
     switch(BLEMidiHelper.gwc(o,0) & 0xf0){
