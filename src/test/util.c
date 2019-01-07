@@ -61,7 +61,7 @@ void parse_line(char *line, size_t len, line_processor lp){
         if(line[i] == '\n'){
             break;
         }
-        if((line[i] == ' ') | (line[i] == '\t')){
+        if((line[i] == ' ') || (line[i] == '\t')){
             continue;
         }
             
