@@ -97,12 +97,28 @@ def _main():
     
     f = open('midi-dump-%s.txt' % (time.strftime('%Y-%m-%d_%H%M%S',time.gmtime()), ), 'w+')
 
-    d = {
+    portl = {
         'opzin': None
         , 'opzout': None
         , 'ardout': None
         , 'ardin': None
     }
+
+    def mb(x, nv=None):
+        if nv == None:
+            v = portl[x]
+            if v == None:
+                if x == 'opzin':
+                    v = mido.open_input(get_port_name('OP-Z', mido.get_input_names()))
+                elif x == 'opzout':
+                    v = mido.open_output(get_port_name('OP-Z', mido.get_output_names()))
+                elif x == 'ardout':
+                    v = mido.open_output(get_port_name('Arduino', mido.get_output_names()))
+            portl[x] = v
+        else:
+            portl[x] = nv
+            v = nv
+        return v
 
     def default_parms():
         return {
@@ -118,7 +134,10 @@ def _main():
             , 'zinfo': '021e53 05'
             , 'readconfig': True
             , 'comp': True
-            , 'noshow': '00 06 0e 09 0b note'
+            , 'noshow': '00 01 06 0e 09 0b note'
+            , 'showall': False
+            , 'cfgmode': False
+            , 'cfgread': True
         }
 
     parms = default_parms()
@@ -129,7 +148,7 @@ def _main():
                 dec = json.decoder.JSONDecoder()
                 v = cf.read()
                 if v.strip() != '':
-                    parms = dec.decode(v)
+                    parms.update(dec.decode(v))
         except Exception as e:
             puts(colored.red(repr(e)))
     
@@ -148,10 +167,11 @@ def _main():
         
         ignore = False
         v = m.hex().replace(' ','').upper()
-        if not parms['debug']:
-            if v == 'F00020760100'+parms['zinfo'].replace(' ','').upper()+'F7' \
-                or (v.startswith('F00020760101') and v.endswith((parms['zinfo'].replace(' ','').upper()[2:-2])+'F7')):
-                ignore = True
+        
+        #if not parms['debug']:
+        #    if v == 'F00020760100'+parms['zinfo'].replace(' ','').upper()+'F7' \
+        #        or (v.startswith('F00020760101') and v.endswith((parms['zinfo'].replace(' ','').upper()[2:-2])+'F7')):
+        #        ignore = True
         
         p = parms['noshow'].upper().split(' ')
         
@@ -163,7 +183,7 @@ def _main():
             if v[10:12] in p:
                 ignore = True
         
-        if ignore:
+        if ignore and not parms['showall']:
             return
             
         l = format_message(direction, port, m, clinty=True)
@@ -319,18 +339,6 @@ def _main():
         if parms['debug']: print('SysEx input: %s' % (d,))
         return mido.Message('sysex',data=binascii.a2b_hex(d))
 
-    def mb(x):
-        v = d[x]
-        if v == None:
-            if x == 'opzin':
-                v = mido.open_input(get_port_name('OP-Z', mido.get_input_names()))
-            elif x == 'opzout':
-                v = mido.open_output(get_port_name('OP-Z', mido.get_output_names()))
-            elif x == 'ardout':
-                v = mido.open_output(get_port_name('Arduino', mido.get_output_names()))
-        d[x] = v
-        return v
-
     mido.set_backend('mido.backends.portmidi')
     
     def send_msg(o, m):
@@ -368,12 +376,20 @@ def _main():
         
         return incb
     
-    
+    do_stop = False
     
     def sendinfomessage():
-        while True:
+        while not do_stop:
             if parms['cc'] and parms['sendinfo']:
                 send_msg('opzout', sexm('00 20 76 01' + ' 00 ' + parms['zinfo']))
+                
+                if parms['cfgmode']:
+                    time.sleep(.01)
+                    if parms['cfgread']:
+                        send_msg('opzout', sexm('00207601 52 031E 69 00'))
+                    else:
+                        send_msg('opzout', sexm('00207601 52 031E 69 01'))
+                    
             time.sleep(parms['idel'])
     
     bgt = threading.Thread(target=sendinfomessage,name="SindInfoMsg")
@@ -383,9 +399,21 @@ def _main():
     class PMCmd(cmd.Cmd):
         def __init__(self):
             cmd.Cmd.__init__(self)
-            self.prompt = 'PM> '
+            self.update_prompt()
+            
+        def update_prompt(self):
+            if parms['sendinfo']:
+                if parms['cfgmode']:
+                    if parms['cfgread']:
+                        self.prompt = 'CFG> '
+                    else:
+                        self.prompt = 'CFG-W> '
+                else:
+                    self.prompt = 'PM> '
+            else:
+                self.prompt = 'MIDI> '
+            
         def do_connect(self, arg):
-            print("forwarding started")
             mb('opzin').callback = gen_incb('opzin')
             if parms['cc']:
                 send_msg('opzout', mm('f0 7e7f0601 f7'))
@@ -394,7 +422,8 @@ def _main():
                 time.sleep(.1)
                 send_msg('opzout', mm('f000207601 0b 0009 000000000000 0000 f7'))
                 time.sleep(.1   )
-            bgt.start()
+            if not bgt.is_alive():
+                bgt.start()
         def do_sexm(self, arg):
             m = sexm(arg)
             pp.pprint(m)
@@ -408,6 +437,9 @@ def _main():
             return True
         def do_p(self, arg):
             pp.pprint(parms)
+        def complete_t(self, text, line, begidx, endidx):
+            return self.complete_toggle(text, line, begidx, endidx)
+            
         def complete_toggle(self, text, line, begidx, endidx):
             v = []
             for x in parms.keys():
@@ -419,10 +451,15 @@ def _main():
             if len(v) == 1:
                 v[0] = v[0] + ' '
             return v
+        def do_t(self, arg):
+            return self.do_toggle(arg)
         def do_toggle(self, arg):
             parms[arg.lower()] = (not parms[arg.lower()])
             update_config_file()
+            self.update_prompt()
             self.do_p('')
+        def do_tm(self, arg):
+            return self.do_togglem(arg)
         def do_togglem(self, arg):
             x = parms['noshow'].upper().split(' ')
             y = arg.upper().split(' ')
@@ -436,6 +473,7 @@ def _main():
             
             parms['noshow'] = ' '.join(x)
             update_config_file()
+            self.update_prompt()
             self.do_p('')
         def complete_set(self, text, line, begidx, endidx):
             v = []
@@ -452,6 +490,7 @@ def _main():
             x = arg.split(' ', 1)
             parms[x[0].lower()] = x[1]
             update_config_file()
+            self.update_prompt()
             self.do_p('')
         def complete_seti(self, text, line, begidx, endidx):
             v = []
@@ -468,12 +507,14 @@ def _main():
             x = arg.split(' ', 1)
             parms[x[0].lower()] = int(x[1])
             update_config_file()
+            self.update_prompt()
             self.do_p('')
         def do_reset(self, arg):
             dp = default_parms()
             parms.clear()
             parms.update(dp)
             last_msg.clear()
+            self.update_prompt()
             self.do_p('')
         def do_mm(self, arg):
             puts_message('X', 'internal', mm(arg))
@@ -509,6 +550,7 @@ def _main():
                     s = s + colored.yellow(repr(v[0])) + ' '
             s = s + colored.blue('Last messages cleared')
             puts(s)
+            
         def do_bdec(self, arg):
             from bitstring import BitArray
             
@@ -526,8 +568,9 @@ def _main():
             pp.pprint(binascii.b2a_hex(s))
             
         def onecmd(self, c):
+            v = False
             try:
-                return cmd.Cmd.onecmd(self, c)
+                v = cmd.Cmd.onecmd(self, c)
             except Exception as e:
                 import traceback
                 
@@ -535,7 +578,10 @@ def _main():
                 with indent(4):
                     puts(colored.yellow(repr(e)))
                     puts(colored.yellow(traceback.format_exc()))
-            return False
+            
+            self.update_prompt()
+            
+            return v
             
         def complete_read(self, text, line, begidx, endidx):
             import os
@@ -592,13 +638,26 @@ def _main():
             
         def do_default(self, arg):
             puts(colored.magenta("Unknown command %s\n" % (arg,)))
+            return False
     
     c = PMCmd()
  
     c.cmdloop()
+    
+    do_stop = True
     if bgt.is_alive():
         bgt.join(timeout=1)
-
+    
+    for x in portl.keys():
+        if portl[x] == None:
+            continue
+        try:
+            portl[x].close()
+        except:
+            pass
+        
+    
+    
     sys.exit()    
 
 if __name__ == '__main__':
